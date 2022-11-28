@@ -1,4 +1,0 @@
-insert into maindish(mainDishId, title, price, description) values (1, "Rib-Eye Steaks", 18.00, "2 12-ounce rib eye fire grilled steak. Calories: 1980");
-insert into maindish(mainDishId, title, price, description) values (2, "Chicken Sandwiches",11.00, "2 fast food style chicken sandwiches with mayo and salad. Calories: 1300");
-insert into maindish(mainDishId, title, price, description) values (3, "Spaghetti & Meatballs", 14.00, "Classic Italtian bowl of Spaghetti and Meatballs with 1/2 a cup of Tomato sauce. Calories: 1180");
-insert into maindish(mainDishId, title, price, description) values (4, "Lobster rolls", 27.00, "2 12-ounce cocked lobsters set within long hotdog buns with salad. Calories: 1350");
