@@ -1,16 +1,38 @@
-# This is a sample Python script.
+import pymongo as pymongo
+from flask import Flask, request, jsonify
+from flask_objectid_converter import ObjectIDConverter
+from pymongo import ReturnDocument
+from pymongo.server_api import ServerApi
+from bson import json_util, ObjectId
+from flask_cors import CORS
+import datetime as dt
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+
+from dotenv import load_dotenv
+
+load_dotenv()
+import os
+
+MONGODB_LINK = os.environ.get("MONGODB_LINK")
+MONGODB_USER = os.environ.get("MONGO_USER")
+MONGODB_PASS = os.environ.get("MONGODB_PASS")
+
+#connecting to mongodb
+client = pymongo.MongoClient(f"mongodb+srv: //{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority",
+                             server_api=ServerApi('1'))
+
+db = client.sound
+
+def getTimeStamp():
+    return dt.datetime.today().replace(microsecond=0)
+
+app = Flask(__name__)
+
+app.url_map.converters['objectid'] = ObjectIDConverter
+
+app.config['DEBUG'] = True
+
+CORS(app)
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
 
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
