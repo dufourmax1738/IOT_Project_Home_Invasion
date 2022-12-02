@@ -39,6 +39,7 @@ app.url_map.converters['objectid'] = ObjectIDConverter
 
 app.config['DEBUG'] = True
 
+#mkaing our api accessible by any IP
 CORS(app)
 
 @app.route("/sensors/<int:sensorId>/motion", methods=["POST"])
@@ -62,6 +63,21 @@ def get_all_motion(sensorId):
     end = request.args.get("end")
 
     query = {"sensorId": sensorId}
+    if start is None and end is not None:
+        try:
+            end = dt.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S")
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+        query.update({"timestamp": {"$lte": end}})
+
+    elif end is None and start is not None:
+        try:
+            start = dt.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+
 
 
 
