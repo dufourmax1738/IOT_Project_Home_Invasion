@@ -77,6 +77,8 @@ def get_all_motion(sensorId):
         except Exception as e:
             return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
 
+        query
+
 
 
 
