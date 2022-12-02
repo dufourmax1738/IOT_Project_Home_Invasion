@@ -8,6 +8,7 @@ from flask_cors import CORS
 import datetime as dt
 from IOT_Project_Home_Invasion.Schemas import MotionSensorSchema
 
+# Loading private connection information from environment variables
 from dotenv import load_dotenv
 
 
@@ -19,7 +20,7 @@ MONGODB_LINK = os.environ.get("MONGODB_LINK")
 MONGODB_USER = os.environ.get("MONGO_USER")
 MONGODB_PASS = os.environ.get("MONGODB_PASS")
 
-#connecting to mongodb
+# connecting to mongodb
 client = pymongo.MongoClient(f"mongodb+srv: //{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority",
                              server_api=ServerApi('1'))
 
@@ -34,11 +35,11 @@ def getTimeStamp():
     return dt.datetime.today().replace(minute=1)
 
 app = Flask(__name__)
-
+# adding an objectid type for the URL fields instead of treating it as string
+# this is coming from a library we are using instead of building our own custom type
 app.url_map.converters['objectid'] = ObjectIDConverter
 
 app.config['DEBUG'] = True
-
 #mkaing our api accessible by any IP
 CORS(app)
 
