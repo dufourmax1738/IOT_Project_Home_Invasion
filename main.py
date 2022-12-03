@@ -26,18 +26,18 @@ def add_Home():
     if error:
         return error, 400
 
-    result = db.homes.insert_one(request.json)
+    db.homes.insert_one(request.json)
 
-    return jsonify(result)
+    return jsonify({"name" : request.json["name"]})
 @app.route('/homes',methods=["GET"])
 def get_All_Homes():
-    cursor = db.homes.find({},{"name":1,"_id":0})
+    cursor = db.homes.find({},{"name":1,"_id":0,"devices":1})
     homes = list(cursor)
 
     return jsonify(homes), 200
 @app.route('/homes/<home>',methods=["GET"])
 def get_Home_By_Name(home):
-    cursor = db.homes.find({"name":home},{"name":1,"_id":0})
+    cursor = db.homes.find({"name":home},{"name":1,"_id":0,"devices":1})
     homes = list(cursor)
 
     return jsonify(homes), 200
