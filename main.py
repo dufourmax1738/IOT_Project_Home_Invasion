@@ -49,7 +49,6 @@ def update_Home_Name(home):
         return error, 400
     query = {"name":home}
     newValue = {"$set":{"name":request.json["name"]}}
-    argument = {"returnOriginal": "false"}
     updatedHome = db.homes.find_one_and_update(query,newValue,{"name":1,"_id":0},return_document=ReturnDocument.AFTER, upsert=False,)
 
     return jsonify(updatedHome), 200
