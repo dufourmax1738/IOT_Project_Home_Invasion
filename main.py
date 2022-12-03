@@ -1,4 +1,5 @@
 import pymongo as pymongo
+from pymongo import ReturnDocument
 from flask import Flask, request, jsonify
 from HomeSchema import HomeSchemaPost
 
@@ -47,7 +48,7 @@ def update_Home_Name(home):
     query = {"name":home}
     newValue = {"$set":{"name":request.json["name"]}}
     argument = {"returnOriginal": "false"}
-    updatedHome = db.homes.update_one(query,newValue,argument)
+    updatedHome = db.homes.find_one_and_update(query,newValue,{"name":1,"_id":0},return_document=ReturnDocument.AFTER, upsert=False,)
 
     return jsonify(updatedHome), 200
 
