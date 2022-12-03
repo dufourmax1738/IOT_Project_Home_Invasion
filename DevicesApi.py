@@ -16,13 +16,11 @@ def get_All_Devices_For_Home():
     return jsonify({"ping":"pong"}), 200
 
 @devices.route('/homes/<home>/devices',methods=["POST"])
-def add_Device_For_Home():
+def add_Device_For_Home(home):
     # error = HomeSchemaPost().validate(request.json)
     # if error:
     #     return error, 400
 
     db.homes.insert_one(request.json)
 
-    return jsonify({"name": request.json["name"]})
-
-    return jsonify({"ping":"pong"}), 200
+    return jsonify(request.json)
