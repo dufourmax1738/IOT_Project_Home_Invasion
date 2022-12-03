@@ -2,8 +2,10 @@ import pymongo as pymongo
 from pymongo import ReturnDocument
 from flask import Flask, request, jsonify
 from HomeSchema import HomeSchemaPost
+from DevicesApi import devices
 
 app = Flask(__name__)
+app.register_blueprint(devices)
 app.config['DEBUG'] = True
 
 client = pymongo.MongoClient("mongodb+srv://MaxDufour:5uwLOgDI1k8Qf1Op@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority")
@@ -24,9 +26,9 @@ def add_Home():
     if error:
         return error, 400
 
-    db.homes.insert_one(request.json)
+    result = db.homes.insert_one(request.json)
 
-    return jsonify({"name" : request.json["name"]})
+    return jsonify(result)
 @app.route('/homes',methods=["GET"])
 def get_All_Homes():
     cursor = db.homes.find({},{"name":1,"_id":0})
