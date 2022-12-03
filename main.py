@@ -39,6 +39,17 @@ def get_Home_By_Name(home):
 
     return jsonify(homes), 200
 
+@app.route('/homes/<home>', methods=["PUT"])
+def update_Home_Name(home):
+    error = HomeSchemaPost().validate(request.json)
+    if error:
+        return error, 400
+    query = {"name":home}
+    newValue = {"$set":{"name":request.json["name"]}}
+    argument = {"returnOriginal": "false"}
+    updatedHome = db.homes.update_one(query,newValue,argument)
+
+    return jsonify(updatedHome), 200
 
 
 
