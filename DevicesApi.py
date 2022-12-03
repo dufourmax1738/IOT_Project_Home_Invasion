@@ -17,10 +17,11 @@ def get_All_Devices_For_Home():
 
 @devices.route('/homes/<home>/devices',methods=["POST"])
 def add_Device_For_Home(home):
-    # error = HomeSchemaPost().validate(request.json)
     # if error:
     #     return error, 400
+    query = {"name": home}
+    newValue = {"$push": {"devices": request.json}}
+    updatedHome = db.homes.find_one_and_update(query, newValue, {"name": 1, "_id": 0, "devices":1},
+                                               return_document=ReturnDocument.AFTER, upsert=False, )
 
-    db.homes.insert_one(request.json)
-
-    return jsonify(request.json)
+    return jsonify(updatedHome), 200
