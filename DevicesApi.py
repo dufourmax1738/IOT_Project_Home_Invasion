@@ -68,7 +68,7 @@ def add_Device_For_Home(home):
     query = {"name": home}
     newValue = {"$push": {"devices": request.json}}
     updatedHome = db.homes.find_one_and_update(query, newValue, {"name": 1, "_id": 0, "devices": 1},
-                                               return_document=ReturnDocument.AFTER, upsert=False, )
+                                               return_document=ReturnDocument.AFTER, upsert=False)
 
     return jsonify(updatedHome), 200
 
@@ -77,7 +77,7 @@ def delete_Device_For_Home(home, device):
     query = {"name": home}
     newValue = {"$pull": {"devices": {"name":device}}}
     updatedHome = db.homes.find_one_and_update(query, newValue, {"name": 1, "_id": 0, "devices": 1},
-                                               return_document=ReturnDocument.AFTER, upsert=False, )
+                                               return_document=ReturnDocument.AFTER, upsert=False)
 
     return jsonify(updatedHome), 200
 
@@ -97,6 +97,6 @@ def update_Device_For_Home(home, device):
 
     newValue = {"$push": {"devices": request.json}}
     updatedHome = db.homes.find_one_and_update(query, newValue, {"name": 1, "_id": 0, "devices": 1},
-                                               return_document=ReturnDocument.AFTER, upsert=False, )
+                                               return_document=ReturnDocument.AFTER, upsert=False)
 
     return jsonify(updatedHome), 200
