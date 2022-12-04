@@ -56,7 +56,7 @@ def update_Home_Name(home):
 
     query = {"name":home}
     newValue = {"$set":{"name":request.json["name"]}}
-    updatedHome = db.homes.find_one_and_update(query,newValue,{"name":1,"_id":0},return_document=ReturnDocument.AFTER, upsert=False,)
+    updatedHome = db.homes.find_one_and_update(query,newValue,{"name":1,"_id":0},return_document=ReturnDocument.AFTER, upsert=False)
 
     return jsonify(updatedHome), 200
 
