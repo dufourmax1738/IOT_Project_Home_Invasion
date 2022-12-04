@@ -1,18 +1,18 @@
 import pymongo as pymongo
 from pymongo import ReturnDocument
 from flask import Flask, request, jsonify
-from HomeSchema import HomeSchemaPost
+from HomeSchema import HomeSchema
 from DevicesApi import devices
 
-app = Flask(__name__)
-app.register_blueprint(devices)
-app.config['DEBUG'] = True
+homes = Flask(__name__)
+homes.register_blueprint(devices)
+homes.config['DEBUG'] = True
 
 client = pymongo.MongoClient("mongodb+srv://MaxDufour:5uwLOgDI1k8Qf1Op@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority")
 db = client.HomeInvasions
 
 
-@app.route('/homes/<home>', methods=["DELETE"])
+@homes.route('/homes/<home>', methods=["DELETE"])
 def delete_Home(home):
 
     if(db.homes.delete_many({"name":home}).deleted_count):
@@ -20,31 +20,31 @@ def delete_Home(home):
     return jsonify({"error": "No such home"}), 400
 
 
-@app.route('/homes',methods=["POST"])
+@homes.route('/homes', methods=["POST"])
 def add_Home():
-    error = HomeSchemaPost().validate(request.json)
+    error = HomeSchema().validate(request.json)
     if error:
         return error, 400
 
     db.homes.insert_one(request.json)
 
     return jsonify({"name" : request.json["name"]})
-@app.route('/homes',methods=["GET"])
+@homes.route('/homes', methods=["GET"])
 def get_All_Homes():
     cursor = db.homes.find({},{"name":1,"_id":0,"devices":1})
     homes = list(cursor)
 
     return jsonify(homes), 200
-@app.route('/homes/<home>',methods=["GET"])
+@homes.route('/homes/<home>', methods=["GET"])
 def get_Home_By_Name(home):
     cursor = db.homes.find({"name":home},{"name":1,"_id":0,"devices":1})
     homes = list(cursor)
 
     return jsonify(homes), 200
 
-@app.route('/homes/<home>', methods=["PUT"])
+@homes.route('/homes/<home>', methods=["PUT"])
 def update_Home_Name(home):
-    error = HomeSchemaPost().validate(request.json)
+    error = HomeSchema().validate(request.json)
     if error:
         return error, 400
     query = {"name":home}
@@ -60,7 +60,7 @@ def update_Home_Name(home):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    app.run()
+    homes.run()
 
 
 
