@@ -13,7 +13,7 @@ def get_All_Devices_For_Home(home):
     cursor = db.homes.aggregate([
     {
         '$match': {
-            'name': 'testHome'
+            'name': home
         }
     }, {
         '$project': {
@@ -25,8 +25,33 @@ def get_All_Devices_For_Home(home):
         '$project': {
             'name': 0
         }
+    }])
+    homes = list(cursor)
+
+    return jsonify(homes), 200
+
+@devices.route('/homes/<home>/devices/<device>', methods=["GET"])
+def get_Device_From_Device_Name(home, device):
+    cursor = db.homes.aggregate([
+    {
+        '$match': {
+            'name': home
+        }
+    }, {
+        '$unwind': {
+            'path': '$devices'
+        }
+    }, {
+        '$match': {
+            'devices.name': device
+        }
+    }, {
+        '$project': {
+            '_id': 0,
+            'name': 0
+        }
     }
-])
+    ])
     homes = list(cursor)
 
     return jsonify(homes), 200
