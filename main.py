@@ -26,6 +26,9 @@ def add_Home():
     if error:
         return error, 400
 
+    if(len(list(db.homes.find({"name":request.json["name"]})))):
+        return jsonify({"error": "name already exists"}), 400
+
     db.homes.insert_one(request.json)
 
     return jsonify({"name" : request.json["name"]})
@@ -47,6 +50,10 @@ def update_Home_Name(home):
     error = HomeSchema().validate(request.json)
     if error:
         return error, 400
+
+    if (len(list(db.homes.find({"name": request.json["name"]})))):
+        return jsonify({"error": "name already exists"}), 400
+
     query = {"name":home}
     newValue = {"$set":{"name":request.json["name"]}}
     updatedHome = db.homes.find_one_and_update(query,newValue,{"name":1,"_id":0},return_document=ReturnDocument.AFTER, upsert=False,)

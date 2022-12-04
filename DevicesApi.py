@@ -61,6 +61,10 @@ def add_Device_For_Home(home):
     error = DeviceSchema().validate(request.json)
     if error:
         return error, 400
+
+    if (len(list(db.homes.find({"name": home,"devices.name":request.json["name"]})))):
+        return jsonify({"error": "name already exists"}), 400
+
     query = {"name": home}
     newValue = {"$push": {"devices": request.json}}
     updatedHome = db.homes.find_one_and_update(query, newValue, {"name": 1, "_id": 0, "devices": 1},
@@ -84,6 +88,9 @@ def update_Device_For_Home(home, device):
     if error:
         return error, 400
     query = {"name": home}
+
+    if (len(list(db.homes.find({"name": home,"devices.name":request.json["name"]})))):
+        return jsonify({"error": "name already exists"}), 400
 
     newValue = {"$pull": {"devices": {"name": device}}}
     db.homes.find_one_and_update(query, newValue)
