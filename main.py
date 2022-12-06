@@ -94,13 +94,13 @@ def get_all_sounds(sensorId):
         }, {
             '$group': {
                 '_id': '$sensorId',
-                'avgTemp': {
+                'avgSound': {
                     '$avg': '$sound'
                 },
                 'sounds': {
                     '$push': {
                         'timestamp': '$timestamp',
-                        'temperature': '$sound'
+                        'sound': '$sound'
                     }
                 }
             }
@@ -113,8 +113,8 @@ def get_all_sounds(sensorId):
             del data["_id"]
             data.update({"sensorId": sensorId})
 
-        for temp in data['sounds']:
-            temp["sound"] = temp["sound"].strftime("%Y-%m-%dT%H:%M:%S")
+        for sound in data['sounds']:
+            sound["sound"] = sound["sound"].strftime("%Y-%m-%dT%H:%M:%S")
 
         return data
     else:
