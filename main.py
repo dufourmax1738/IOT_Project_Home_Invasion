@@ -1,16 +1,131 @@
-# This is a sample Python script.
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import pymongo as pymongo
+
+from flask import Flask, request, jsonify
+from flask_objectid_converter import ObjectIDConverter
+from pymongo import ReturnDocument
+from pymongo.server_api import ServerApi
+from Schemas import SoundSensorSchema
+from bson import json_util, ObjectId
+from flask_cors import CORS
+import datetime as dt
+
+#loading private connection information from environment variables
+from dotenv import load_dotenv
+load_dotenv()
+import os
+MONGODB_LINK = os.environ.get("MONGODB_LINK")
+MONGODB_USER = os.environ.get("MONGODB_USER")
+MONGODB_PASS = os.environ.get("MONGODB_PASS")
+
+#connecting to mongodb
+client = pymongo.MongoClient(f"mongodb+srv://{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority", server_api=ServerApi('1'))
+db = client.sound
+
+if 'sound' not in db.list_collection_names():
+    db.create_collection("sound",
+                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'minutes'})
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def getTimeStamp():
+    return dt.datetime.today().replace(microsecond=0)
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+app = Flask(__name__)
+# adding an objectid type for the URL fields instead of treating it as string
+# this is coming from a library we are using instead of building our own custom type
+app.url_map.converters['objectid'] = ObjectIDConverter
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+app.config['DEBUG'] = True
+# making our API accessible by any IP
+CORS(app)
+
+
+@app.route("/sensors/<int:sensorId>/sounds", methods=["POST"])
+def add_sound_value(sensorId):
+    error = SoundSensorSchema().validate(request.json)
+    if error:
+        return error, 400
+
+    data = request.json
+    data.update({"timestamp": getTimeStamp(), "sensorId": sensorId})
+
+    db.sound.insert_one(data)
+
+    data["_id"] = str(data["_id"])
+    data["timestamp"] = data["timestamp"].strftime("%Y-%m-%dT%H:%M:%S")
+    return data
+
+
+@app.route("/sensors/<int:sensorId>/sounds")
+def get_all_sounds(sensorId):
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    query = {"sensorId": sensorId}
+    if start is None and end is not None:
+        try:
+            end = dt.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S")
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+        query.update({"timestamp": {"$lte": end}})
+
+    elif end is None and start is not None:
+        try:
+            start = dt.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+        query.update({"timestamp": {"$gte": start}})
+    elif start is not None and end is not None:
+        try:
+            start = dt.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
+            end = dt.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S")
+
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+        query.update({"timestamp": {"$gte": start, "$lte": end}})
+
+    data = list(db.sound.aggregate([
+        {
+            '$match': query
+        }, {
+            '$group': {
+                '_id': '$sensorId',
+                'avgTemp': {
+                    '$avg': '$sound'
+                },
+                'sounds': {
+                    '$push': {
+                        'timestamp': '$timestamp',
+                        'temperature': '$sound'
+                    }
+                }
+            }
+        }
+    ]))
+
+    if data:
+        data = data[0]
+        if "_id" in data:
+            del data["_id"]
+            data.update({"sensorId": sensorId})
+
+        for temp in data['sounds']:
+            temp["sound"] = temp["sound"].strftime("%Y-%m-%dT%H:%M:%S")
+
+        return data
+    else:
+        return {"error": "id not found"}, 404
+
+
+if __name__ == "__main__":
+    app.run(port=5001)
+
+
+
+
+
+
