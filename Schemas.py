@@ -1,4 +1,4 @@
 from marshmallow import Schema, fields, validate
 
 class SoundSensorSchema(Schema):
-    sound = fields.Number(required=True)
+    sound = fields.Float(required=True)

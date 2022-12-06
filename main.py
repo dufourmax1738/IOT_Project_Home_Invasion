@@ -1,6 +1,6 @@
 
 import pymongo as pymongo
-
+import emulator as em
 from flask import Flask, request, jsonify
 from flask_objectid_converter import ObjectIDConverter
 from pymongo import ReturnDocument
@@ -9,6 +9,7 @@ from Schemas import SoundSensorSchema
 from bson import json_util, ObjectId
 from flask_cors import CORS
 import datetime as dt
+
 
 #loading private connection information from environment variables
 from dotenv import load_dotenv
@@ -22,9 +23,17 @@ MONGODB_PASS = os.environ.get("MONGODB_PASS")
 client = pymongo.MongoClient(f"mongodb+srv://{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority", server_api=ServerApi('1'))
 db = client.sound
 
+
+#mongodb+srv://<username>:<password>@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority
+
 if 'sound' not in db.list_collection_names():
-    db.create_collection("sound",
-                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'minutes'})
+    db.create_collection("sound detected",
+                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
+
+if 'motion' not in db.list_collections_names():
+    db.create_collection("motion detected",
+                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
+
 
 
 def getTimeStamp():
@@ -57,6 +66,43 @@ def add_sound_value(sensorId):
     return data
 
 
+
+@app.route("/sounds")
+def getAll():
+    query = em.db.collection.find()
+    soundList = {}
+
+    for x in query:
+        tempList = {'temps': x}
+
+    data = list(em.db.weather.aggregate([
+        {
+            '$match': tempList
+        }, {
+            '$group': {
+                '_id': 'none',
+                'avgTemp': {
+                    '$avg': '$temp'
+                },
+                'avgHumidity': {
+                    '$avg': '$humidity'
+                },
+                'avgLightLevels': {
+                    '$avg': '$light levels'
+                },
+                'Levels': {
+                    '$push': {
+                        'timestamp': '$timestamp',
+                        'temperatures': '$temp',
+                        'humidity': '$humidity',
+                        'light levels': '$light levels'
+
+                    }
+                }
+            }
+        }
+    ]))
+    return data
 @app.route("/sensors/<int:sensorId>/sounds")
 def get_all_sounds(sensorId):
     start = request.args.get("start")
