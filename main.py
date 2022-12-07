@@ -50,7 +50,7 @@ app.config['DEBUG'] = True
 CORS(app)
 
 
-@app.route("/sensors/<int:sensorId>/sounds", methods=["POST"])
+@app.route("/sensors/<int:sensorId>/sound", methods=["POST"])
 def add_sound_value(sensorId):
     error = SoundSensorSchema().validate(request.json)
     if error:
