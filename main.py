@@ -85,7 +85,7 @@ def add_motion_value(sensorId):
 @app.route("/sensors/<int:sensorId>/motion")
 
 
-def get_all_motion(sensorId):
+def get_sensor_motion(sensorId):
     start = request.args.get("start")
     end = request.args.get("end")
 
@@ -151,7 +151,7 @@ def get_all_motion(sensorId):
 
 
 @app.route("/sensors/<int:sensorId>/sound")
-def get_all_sound(sensorId):
+def get_sensor_sound(sensorId):
     start = request.args.get("start")
     end = request.args.get("end")
 
