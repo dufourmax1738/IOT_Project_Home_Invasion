@@ -83,8 +83,6 @@ def add_motion_value(sensorId):
 
 
 @app.route("/sensors/<int:sensorId>/motion")
-
-
 def get_sensor_motion(sensorId):
     start = request.args.get("start")
     end = request.args.get("end")
