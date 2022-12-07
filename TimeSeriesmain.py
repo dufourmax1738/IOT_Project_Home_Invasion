@@ -9,7 +9,6 @@ from bson import json_util, ObjectId
 from flask_cors import CORS
 import datetime as dt
 
-
 # loading private connection information from environment variables
 from dotenv import load_dotenv
 
@@ -36,8 +35,6 @@ if 'motion' not in db.list_collection_names():
     db.create_collection("motion",
                          timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
 
-em.postSound()
-em.postMotion()
 
 def getTimeStamp():
     return dt.datetime.today().replace(microsecond=0)
@@ -144,15 +141,19 @@ def get_sensor_motion(sensorId):
             data.update({"sensorId": sensorId})
 
         for motion in data['motion']:
-            motion["timestamp"] = motion["timestamp"].strtime("%Y-%m-%dT%H:%M:%S")
+            motion["timestamp"] = motion["timestamp"].strftime("%Y-%m-%dT%H:%M:%S")
 
         return data
     else:
         return {"error": "id not found"}, 404
 
 
+
+
+
 @app.route("/sensors/<int:sensorId>/sound")
 def get_sensor_sound(sensorId):
+    # em.postSound()
     start = request.args.get("start")
     end = request.args.get("end")
 
@@ -189,7 +190,7 @@ def get_sensor_sound(sensorId):
             '$group': {
                 '_id': '$sensorId',
                 'soundCount': {
-                     '$count': {}
+                    '$count': {}
                 },
                 'sound': {
                     '$push': {
@@ -213,5 +214,6 @@ def get_sensor_sound(sensorId):
         return data
     else:
         return {"error": "id not found"}, 404
+
 
 app.run()
