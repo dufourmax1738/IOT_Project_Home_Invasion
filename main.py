@@ -11,8 +11,6 @@ from IOT_Project_Home_Invasion.Schemas import MotionSensorSchema
 # Loading private connection information from environment variables
 from dotenv import load_dotenv
 
-
-
 load_dotenv()
 import os
 
@@ -21,8 +19,9 @@ MONGODB_USER = os.environ.get("MONGO_USER")
 MONGODB_PASS = os.environ.get("MONGODB_PASS")
 
 # connecting to mongodb
-client = pymongo.MongoClient(f"mongodb+srv: //{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority",
-                             server_api=ServerApi('1'))
+client = pymongo.MongoClient(
+    f"mongodb+srv: //{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority",
+    server_api=ServerApi('1'))
 
 db = client.motion
 
@@ -34,14 +33,16 @@ if 'motion' not in db.list_collections_names():
 def getTimeStamp():
     return dt.datetime.today().replace(minute=1)
 
+
 app = Flask(__name__)
 # adding an objectid type for the URL fields instead of treating it as string
 # this is coming from a library we are using instead of building our own custom type
 app.url_map.converters['objectid'] = ObjectIDConverter
 
 app.config['DEBUG'] = True
-#mkaing our api accessible by any IP
+# mkaing our api accessible by any IP
 CORS(app)
+
 
 @app.route("/sensors/<int:sensorId>/motion", methods=["POST"])
 def add_motion_value(sensorId):
@@ -57,6 +58,7 @@ def add_motion_value(sensorId):
     data["_id"] = str(data["_id"])
     data["timestamp"] = data["timestamp"].strftime("%Y-%m-%dT%H:%M:%S")
     return data
+
 
 @app.route("/sensors/<int:sensorId>/motion")
 def get_all_motion(sensorId):
@@ -82,17 +84,35 @@ def get_all_motion(sensorId):
 
     elif start is not None and end is not None:
         try:
-            start = dt.datetime.strptime(start,"%Y-%m-%dT%H:%M:%S")
+            start = dt.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
             end = dt.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S")
 
         except Exception as e:
             return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
 
-
         query.update({"timestamp": {"$gte": start, "$lte": end}})
 
+    data = list(db.motion.aggregate([
+        {
+            '$match': query
+        }, {
+            '$group': {
+                '_id': '$sensorId',
+                'motionCount': {
+                    '$count': {}
+                },
+                'motion': {
+                    '$push': {
+                        'timestamp': '$timestamp',
+                        'motion': '$motion'
+                    }
+                }
+
+            }
+        }
+    ]))
 
 
 
 
-
+app.run()
