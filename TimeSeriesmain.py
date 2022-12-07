@@ -9,6 +9,7 @@ from bson import json_util, ObjectId
 from flask_cors import CORS
 import datetime as dt
 
+
 # loading private connection information from environment variables
 from dotenv import load_dotenv
 
@@ -35,6 +36,8 @@ if 'motion' not in db.list_collection_names():
     db.create_collection("motion",
                          timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
 
+em.postSound()
+em.postMotion()
 
 def getTimeStamp():
     return dt.datetime.today().replace(microsecond=0)
