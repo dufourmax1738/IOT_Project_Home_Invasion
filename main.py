@@ -1,30 +1,31 @@
-
 import pymongo as pymongo
 import emulator as em
 from flask import Flask, request, jsonify
 from flask_objectid_converter import ObjectIDConverter
 from pymongo import ReturnDocument
 from pymongo.server_api import ServerApi
-from Schemas import SoundSensorSchema
+from Schemas import SoundSensorSchema, MotionSensorSchema
 from bson import json_util, ObjectId
 from flask_cors import CORS
 import datetime as dt
 
-
-#loading private connection information from environment variables
+# loading private connection information from environment variables
 from dotenv import load_dotenv
+
 load_dotenv()
 import os
+
 MONGODB_LINK = os.environ.get("MONGODB_LINK")
 MONGODB_USER = os.environ.get("MONGODB_USER")
 MONGODB_PASS = os.environ.get("MONGODB_PASS")
 
-#connecting to mongodb
-client = pymongo.MongoClient(f"mongodb+srv://{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority", server_api=ServerApi('1'))
-db = client.sound
+# connecting to mongodb
+client = pymongo.MongoClient(f"mongodb+srv://{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority",
+                             server_api=ServerApi('1'))
 
+db = client.HomeInvasions
 
-#mongodb+srv://<username>:<password>@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority
+# mongodb+srv://<username>:<password>@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority
 
 if 'sound' not in db.list_collection_names():
     db.create_collection("sound detected",
@@ -33,7 +34,6 @@ if 'sound' not in db.list_collection_names():
 if 'motion' not in db.list_collections_names():
     db.create_collection("motion detected",
                          timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
-
 
 
 def getTimeStamp():
@@ -66,43 +66,90 @@ def add_sound_value(sensorId):
     return data
 
 
+@app.route("/sensors/<int:sensorId>/motion", methods=["POST"])
+def add_motion_value(sensorId):
+    error = MotionSensorSchema().validate(request.json)
+    if error:
+        return error, 400
 
-@app.route("/sounds")
-def getAll():
-    query = em.db.collection.find()
-    soundList = {}
+    data = request.json
+    data.update({"timestamp": getTimeStamp(), "sensorId": sensorId})
 
-    for x in query:
-        tempList = {'temps': x}
+    db.motion.insert_one(data)
 
-    data = list(em.db.weather.aggregate([
+    data["_id"] = str(data["_id"])
+    data["timestamp"] = data["timestamp"].strftime("%Y-%m-%dT%H:%M:%S")
+    return data
+
+
+@app.route("/sensors/<int:sensorId>/motion")
+
+
+def get_all_motion(sensorId):
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    query = {"sensorId": sensorId}
+    if start is None and end is not None:
+        try:
+            end = dt.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S")
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+        query.update({"timestamp": {"$lte": end}})
+
+    elif end is None and start is not None:
+        try:
+            start = dt.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+        query.update({"timestamp": {"$gte": start}})
+
+    elif start is not None and end is not None:
+        try:
+            start = dt.datetime.strptime(start, "%Y-%m-%dT%H:%M:%S")
+            end = dt.datetime.strptime(end, "%Y-%m-%dT%H:%M:%S")
+
+        except Exception as e:
+            return {"error": "timestamp not following format %Y-%m-%dT%H:%M:%S"}, 400
+
+        query.update({"timestamp": {"$gte": start, "$lte": end}})
+
+    data = list(db.motion.aggregate([
         {
-            '$match': tempList
+            '$match': query
         }, {
             '$group': {
-                '_id': 'none',
-                'avgTemp': {
-                    '$avg': '$temp'
+                '_id': '$sensorId',
+                'motionCount': {
+                    '$count': {}
                 },
-                'avgHumidity': {
-                    '$avg': '$humidity'
-                },
-                'avgLightLevels': {
-                    '$avg': '$light levels'
-                },
-                'Levels': {
+                'motion': {
                     '$push': {
                         'timestamp': '$timestamp',
-                        'temperatures': '$temp',
-                        'humidity': '$humidity',
-                        'light levels': '$light levels'
-
+                        'motion': '$motion'
                     }
                 }
+
             }
         }
     ]))
-    return data
+
+    if data:
+        data = data[0]
+        if "_id" in data:
+            del data["_id"]
+            data.update({"sensorId": sensorId})
+
+        for motion in data['motion']:
+            motion["timestamp"] = motion["timestamp"].strtime("%Y-%m-%dT%H:%M:%S")
+
+        return data
+    else:
+        return {"error": "id not found"}, 404
+
+
 @app.route("/sensors/<int:sensorId>/sounds")
 def get_all_sounds(sensorId):
     start = request.args.get("start")
@@ -166,12 +213,4 @@ def get_all_sounds(sensorId):
     else:
         return {"error": "id not found"}, 404
 
-
-if __name__ == "__main__":
-    app.run(port=5001)
-
-
-
-
-
-
+app.run()
