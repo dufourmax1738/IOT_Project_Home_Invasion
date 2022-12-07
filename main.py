@@ -28,11 +28,11 @@ db = client.HomeInvasions
 # mongodb+srv://<username>:<password>@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority
 
 if 'sound' not in db.list_collection_names():
-    db.create_collection("sound detected",
+    db.create_collection("sound",
                          timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
 
-if 'motion' not in db.list_collections_names():
-    db.create_collection("motion detected",
+if 'motion' not in db.list_collection_names():
+    db.create_collection("motion",
                          timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
 
 
@@ -150,8 +150,8 @@ def get_all_motion(sensorId):
         return {"error": "id not found"}, 404
 
 
-@app.route("/sensors/<int:sensorId>/sounds")
-def get_all_sounds(sensorId):
+@app.route("/sensors/<int:sensorId>/sound")
+def get_all_sound(sensorId):
     start = request.args.get("start")
     end = request.args.get("end")
 
@@ -187,10 +187,10 @@ def get_all_sounds(sensorId):
         }, {
             '$group': {
                 '_id': '$sensorId',
-                'avgSound': {
-                    '$avg': '$sound'
+                'soundCount': {
+                     '$count': {}
                 },
-                'sounds': {
+                'sound': {
                     '$push': {
                         'timestamp': '$timestamp',
                         'sound': '$sound'
@@ -206,8 +206,8 @@ def get_all_sounds(sensorId):
             del data["_id"]
             data.update({"sensorId": sensorId})
 
-        for sound in data['sounds']:
-            sound["sound"] = sound["sound"].strftime("%Y-%m-%dT%H:%M:%S")
+        for sound in data['sound']:
+            sound["timestamp"] = sound["timestamp"].strftime("%Y-%m-%dT%H:%M:%S")
 
         return data
     else:
