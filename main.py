@@ -112,6 +112,18 @@ def get_all_motion(sensorId):
         }
     ]))
 
+    if data:
+        data = data[0]
+        if "_id" in data:
+            del data["_id"]
+            data.update({"sensorId": sensorId})
+
+        for motion in data['motion']:
+            motion["timestamp"] = motion["timestamp"].strtime("%Y-%m-%dT%H:%M:%S")
+
+        return data
+    else:
+        return {"error": "id not found"}, 404
 
 
 
