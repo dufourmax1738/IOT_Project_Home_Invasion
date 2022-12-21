@@ -1,8 +1,16 @@
+from flask_cors import CORS
 import pymongo as pymongo
 from pymongo import ReturnDocument
 from flask import Flask, request, jsonify
+
 from HomeSchema import HomeSchema
 from DevicesApi import devices
+from Emulator import postMotion, postSound
+
+from dotenv import load_dotenv
+
+load_dotenv()
+import os
 
 homes = Flask(__name__)
 homes.register_blueprint(devices)
@@ -11,10 +19,13 @@ homes.config['DEBUG'] = True
 client = pymongo.MongoClient("mongodb+srv://MaxDufour:5uwLOgDI1k8Qf1Op@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority")
 db = client.HomeInvasions
 
+CORS(homes)
+
+postMotion()
+postSound()
 
 @homes.route('/homes/<home>', methods=["DELETE"])
 def delete_Home(home):
-
     if(db.homes.delete_many({"name":home}).deleted_count):
         return jsonify({"deleted_home": home}), 200
     return jsonify({"error": "No such home"}), 400
@@ -36,6 +47,8 @@ def add_Home():
 def get_All_Homes():
     cursor = db.homes.find({},{"name":1,"_id":0,"devices":1})
     homes = list(cursor)
+
+
 
     return jsonify(homes), 200
 @homes.route('/homes/<home>', methods=["GET"])
