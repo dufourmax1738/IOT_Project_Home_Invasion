@@ -10,7 +10,7 @@ def postSound():
 
     data = {"sound":random.randint(20,100)}
 
-    r = requests.post(url=URL, data = data )
+    r = requests.post(url=URL, data = data, headers={'Content-Type': 'application/json'})
 
     finalData = r.json()
     print(finalData)
@@ -20,7 +20,7 @@ def postMotion():
 
     data = {"motion": random.randint(0, 1)}
 
-    r = requests.post(url=URL, data=data)
+    r = requests.post(url=URL, data=data, headers={'Content-Type': 'application/json'})
 
     finalData = r.json()
     print(finalData)
