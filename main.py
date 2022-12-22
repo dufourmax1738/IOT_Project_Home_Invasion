@@ -21,10 +21,41 @@ from DevicesApi import devices
 homes = Flask(__name__)
 homes.register_blueprint(devices)
 homes.config['DEBUG'] = True
+CORS(homes)
 
-client = pymongo.MongoClient("mongodb+srv://MaxDufour:5uwLOgDI1k8Qf1Op@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority")
+
+#app = Flask(__name__)
+# adding an objectid type for the URL fields instead of treating it as string
+# this is coming from a library we are using instead of building our own custom type
+#app.url_map.converters['objectid'] = ObjectIDConverter
+#app.config['DEBUG'] = True
+# making our API accessible by any IP
+#CORS(app)
+
+load_dotenv()
+import os
+
+
+MONGODB_LINK = os.environ.get("MONGODB_LINK")
+MONGODB_USER = os.environ.get("MONGODB_USER")
+MONGODB_PASS = os.environ.get("MONGODB_PASS")
+
+
+
+# connecting to mongodb
+client = pymongo.MongoClient(f"mongodb+srv://{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority"
+                             ,server_api=ServerApi('1'))
 db = client.HomeInvasions
 
+# mongodb+srv://<username>:<password>@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority
+
+if 'sound' not in db.list_collection_names():
+    db.create_collection("sound",
+                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
+
+if 'motion' not in db.list_collection_names():
+    db.create_collection("motion",
+                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
 
 @homes.route('/homes/<home>', methods=["DELETE"])
 def delete_Home(home):
@@ -48,13 +79,13 @@ def add_Home():
     return jsonify({"name" : request.json["name"]})
 @homes.route('/homes', methods=["GET"])
 def get_All_Homes():
-    cursor = db.homes.find({},{"name":1,"_id":0,"devices":1})
+    cursor = db.homes.find({}, {"name":1, "_id":0, "devices":1})
     homes = list(cursor)
 
     return jsonify(homes), 200
 @homes.route('/homes/<home>', methods=["GET"])
 def get_Home_By_Name(home):
-    cursor = db.homes.find({"name":home},{"name":1,"_id":0,"devices":1})
+    cursor = db.homes.find({"name":home}, {"name":1, "_id":0, "devices":1})
     homes = list(cursor)
 
     return jsonify(homes), 200
@@ -70,54 +101,19 @@ def update_Home_Name(home):
 
     query = {"name":home}
     newValue = {"$set":{"name":request.json["name"]}}
-    updatedHome = db.homes.find_one_and_update(query,newValue,{"name":1,"_id":0},return_document=ReturnDocument.AFTER, upsert=False)
+    updatedHome = db.homes.find_one_and_update(query, newValue, {"name":1, "_id":0}, return_document=ReturnDocument.AFTER, upsert=False)
 
     return jsonify(updatedHome), 200
 
 
 
-load_dotenv()
-import os
 
-
-MONGODB_LINK = os.environ.get("MONGODB_LINK")
-MONGODB_USER = os.environ.get("MONGODB_USER")
-MONGODB_PASS = os.environ.get("MONGODB_PASS")
-
-
-# connecting to mongodb
-client = pymongo.MongoClient(f"mongodb+srv://{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority",
-                             server_api=ServerApi('1'))
-
-
-db = client.HomeInvasions
-
-# mongodb+srv://<username>:<password>@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority
-
-if 'sound' not in db.list_collection_names():
-    db.create_collection("sound",
-                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
-
-if 'motion' not in db.list_collection_names():
-    db.create_collection("motion",
-                         timeseries={'timeField': 'timestamp', 'metaField': 'sensorId', 'granularity': 'hours'})
-
+#Below is for sensors above for households
 
 def getTimeStamp():
     return dt.datetime.today().replace(microsecond=0)
 
-
-app = Flask(__name__)
-# adding an objectid type for the URL fields instead of treating it as string
-# this is coming from a library we are using instead of building our own custom type
-app.url_map.converters['objectid'] = ObjectIDConverter
-
-app.config['DEBUG'] = True
-# making our API accessible by any IP
-CORS(app)
-
-
-@app.route("/sensors/<int:sensorId>/sound", methods=["POST"])
+@homes.route("/sensors/<int:sensorId>/sound", methods=["POST"])
 def add_sound_value(sensorId):
     error = SoundSensorSchema().validate(request.json)
     if error:
@@ -133,7 +129,7 @@ def add_sound_value(sensorId):
     return data
 
 
-@app.route("/sensors/<int:sensorId>/motion", methods=["POST"])
+@homes.route("/sensors/<int:sensorId>/motion", methods=["POST"])
 def add_motion_value(sensorId):
     error = MotionSensorSchema().validate(request.json)
     if error:
@@ -142,6 +138,7 @@ def add_motion_value(sensorId):
     data = request.json
     data.update({"timestamp": getTimeStamp(), "sensorId": sensorId})
 
+    #in the Post body:    { "sound": <enter number>}
     db.motion.insert_one(data)
 
     data["_id"] = str(data["_id"])
@@ -149,7 +146,7 @@ def add_motion_value(sensorId):
     return data
 
 
-@app.route("/sensors/<int:sensorId>/motion")
+@homes.route("/sensors/<int:sensorId>/motion", methods=["GET"])
 def get_sensor_motion(sensorId):
     start = request.args.get("start")
     end = request.args.get("end")
@@ -218,7 +215,7 @@ def get_sensor_motion(sensorId):
 
 
 
-@app.route("/sensors/<int:sensorId>/sound")
+@homes.route("/sensors/<int:sensorId>/sound", methods=["GET"])
 def get_sensor_sound(sensorId):
     # em.postSound()
     start = request.args.get("start")
@@ -283,8 +280,8 @@ def get_sensor_sound(sensorId):
         return {"error": "id not found"}, 404
 
 
-app.run()
-=======
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     homes.run()

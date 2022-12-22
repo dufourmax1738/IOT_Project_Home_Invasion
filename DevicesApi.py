@@ -2,9 +2,20 @@ import pymongo as pymongo
 from pymongo import ReturnDocument
 from flask import Flask, request, jsonify, Blueprint
 from DeviceSchema import DeviceSchema
+from dotenv import load_dotenv
 
-client = pymongo.MongoClient("mongodb+srv://MaxDufour:5uwLOgDI1k8Qf1Op@iotfinalproject.ldavcfn.mongodb.net/?retryWrites=true&w=majority")
+
+load_dotenv()
+import os
+
+MONGODB_LINK = os.environ.get("MONGODB_LINK")
+MONGODB_USER = os.environ.get("MONGODB_USER")
+MONGODB_PASS = os.environ.get("MONGODB_PASS")
+
+
+client = pymongo.MongoClient(f"mongodb+srv://{MONGODB_USER}:{MONGODB_PASS}@{MONGODB_LINK}/?retryWrites=true&w=majority")
 db = client.HomeInvasions
+
 
 devices = Blueprint('devices', __name__, template_folder='templates')
 
