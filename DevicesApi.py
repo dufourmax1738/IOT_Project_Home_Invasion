@@ -28,7 +28,7 @@ def get_All_Devices_For_Home(home):
     }])
     homes = list(cursor)
 
-    return jsonify(homes), 200
+    return homes, 200
 
 @devices.route('/homes/<home>/devices/<device>', methods=["GET"])
 def get_Device_From_Device_Name(home, device):
