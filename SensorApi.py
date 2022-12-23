@@ -214,6 +214,36 @@ def get_sensor_sound(sensorId):
     else:
         return {"error": "id not found"}, 404
 
+@sensors.route("/homes/<string:home>/devices/<string:device>/average")
+def get_sound_average_for_home(home, device):
+    homeDevices = get_All_Devices_For_Home(home)[0]
+    soundSensors = []
+    for device in homeDevices[0]["devices"]:
+        soundSensors.append(device["soundSensorId"])
+    sound = []
+
+    query = {"sensorId": { "$in" : soundSensors }}
+
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    data = list(db.sound.aggregate([
+        {
+            '$match': query
+        }, {
+            '$group': {
+                '_id': '$sensorId',
+                'soundAvg': {
+                    '$avg': '$sound'
+                }
+            }
+        }
+    ]))
+#http://127.0.0.1:5000/homes/testHome/devices/testDevice/average?start=2021-12-05T14:01:29&end=2023-12-22T19:18:00   <-- POSTMAN URL Example
+
+    return data
+
+
 @sensors.route("/homes/<string:home>/motion")
 def get_Motion_Count_For_Home(home):
     homeDevices = get_All_Devices_For_Home(home)[0]
