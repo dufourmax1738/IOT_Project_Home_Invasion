@@ -54,7 +54,7 @@ def get_Device_From_Device_Name(home, device):
     ])
     homes = list(cursor)
 
-    return jsonify(homes), 200
+    return homes, 200
 
 @devices.route('/homes/<home>/devices',methods=["POST"])
 def add_Device_For_Home(home):
