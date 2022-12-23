@@ -1,10 +1,13 @@
 import pymongo
+import requests
 from dotenv import load_dotenv
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from flask_cors import CORS
 from flask_objectid_converter import ObjectIDConverter
 from pymongo.server_api import ServerApi
 import datetime as dt
+
+from DevicesApi import get_All_Devices_For_Home, get_Device_From_Device_Name
 from SensorSchemas import SoundSensorSchema, MotionSensorSchema
 
 load_dotenv()
@@ -107,6 +110,7 @@ def get_sensor_motion(sensorId):
 
         query.update({"timestamp": {"$gte": start, "$lte": end}})
 
+    query.update({"motion" : 1})
     data = list(db.motion.aggregate([
         {
             '$match': query
@@ -207,3 +211,31 @@ def get_sensor_sound(sensorId):
         return data
     else:
         return {"error": "id not found"}, 404
+
+@sensors.route("/homes/<string:home>/motion")
+def get_Motion_Count_For_Home(home):
+    homeDevices = get_All_Devices_For_Home(home)[0]
+    motionSensors = []
+    for device in homeDevices[0]["devices"]:
+        motionSensors.append(device["motionSensorId"])
+    motion = []
+
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    for sensor in motionSensors:
+        motion.append(requests.get("http://127.0.0.1:5000/sensors/"+str(sensor)+"/motion?start="+str(start)+"&end="+str(end)).json())
+
+    return motion
+
+#getDeivceFromDeviceName
+# /homes/<string:home>/devices/<string:device>/motion
+
+@sensors.route("/homes/<string:home>/devices/<string:device>/motion")
+def  get_Motion_Count_For_Device(home,device):
+    homeDevice = get_Device_From_Device_Name(home, device)[0]
+
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    return requests.get("http://127.0.0.1:5000/sensors/"+str(homeDevice[0]["devices"]["motionSensorId"])+"/motion?start="+str(start)+"&end="+str(end)).json()
